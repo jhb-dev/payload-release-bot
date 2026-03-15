@@ -1,0 +1,27 @@
+{
+  "name": "payload-release-bot",
+  "version": "1.0.0",
+  "description": "Posts to X whenever a new Payload CMS release is published on GitHub",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/bot.ts",
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "oxlint src",
+    "format": "oxfmt src",
+    "format:check": "oxfmt --check src"
+  },
+  "keywords": ["payload", "cms", "twitter", "x", "release-bot"],
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.1",
+  "dependencies": {
+    "twitter-api-v2": "^1.29.0"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.40.0",
+    "oxlint": "^1.55.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}

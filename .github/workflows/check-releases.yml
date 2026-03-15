@@ -1,0 +1,77 @@
+name: Check Payload CMS Releases
+
+on:
+  # Run once per hour
+  schedule:
+    - cron: "0 * * * *"
+  # Allow manual runs from the Actions tab
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (print tweet, do not post)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+# Prevent concurrent runs so we never post the same release twice
+concurrency:
+  group: check-releases
+  cancel-in-progress: false
+
+jobs:
+  check-and-tweet:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required to push the updated last_release.txt back to the repo
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+      - name: Run release bot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          # Use the workflow_dispatch input when present, otherwise default to false
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: pnpm start
+
+      - name: Commit updated last_release.txt
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last_release.txt
+          if git diff --staged --quiet; then
+            echo "last_release.txt unchanged – nothing to commit"
+          else
+            git commit -m "chore: update last posted release [skip ci]"
+            git push
+          fi
